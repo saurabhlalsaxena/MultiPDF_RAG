@@ -134,7 +134,7 @@ def question_answerWithMemory (vectordb):
   )
 
   # Run chain
-  retriever=vectordb.as_retriever()
+  retriever=vectordb.as_retriever(search_type = "mmr")
   qa = ConversationalRetrievalChain.from_llm(
       llm,
       retriever=retriever,
