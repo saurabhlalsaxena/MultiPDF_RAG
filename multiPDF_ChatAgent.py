@@ -82,6 +82,19 @@ def get_bookSummaries(stringSectionSummaries):
   book_summary = chat.invoke(book_sectionSummaries)
   return book_summary
 
+def create_summaryDoc(summary):
+  from langchain.docstore.document import Document
+
+  new_doc =  Document(
+      page_content=summary,
+      metadata={
+          "source": "AI generated summary",
+          "page": 1
+      }
+  )
+  new_docs = [new_doc]
+  return new_docs
+
 # Function to get Splits for VectorDB
 def get_splitsForVectorDB(pages):
   from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -98,7 +111,7 @@ def create_VectorStore():
   from langchain_community.vectorstores import Chroma
 
   embeddings = OpenAIEmbeddings()
-  
+
   persist_directory = 'chroma/'
   vectordb=Chroma(
       #persist_directory=persist_directory,
@@ -110,7 +123,7 @@ def create_VectorStore():
 def add_toVectorStore(vectordb,splits):
   from langchain_openai import OpenAIEmbeddings
   from langchain_community.vectorstores import Chroma
-  
+
   embeddings = OpenAIEmbeddings()
   vectordb.add_documents(
           documents=splits,
@@ -134,7 +147,7 @@ def question_answerWithMemory (vectordb):
   )
 
   # Run chain
-  retriever=vectordb.as_retriever(search_type = "mmr")
+  retriever=vectordb.as_retriever(search_type = "mmr", search_kwargs={"k": 10})
   qa = ConversationalRetrievalChain.from_llm(
       llm,
       retriever=retriever,
@@ -182,8 +195,8 @@ def main():
       print("VectorDB deleted")
       st.session_state.doc_count = 0
       del st.session_state.book_summary
-      
-  
+
+
   #Generate Summaries
   if uploaded_file and 'vs' not in st.session_state:
     #Call functions for summarisation
@@ -194,18 +207,21 @@ def main():
           chunks = get_tokenSplit(page)
           sectionSummaries, stringSectionSummaries = get_sectionSummaries(chunks)
           st.session_state.book_summary.append(get_bookSummaries(stringSectionSummaries))
-          
-    for i in range(len(st.session_state.book_summary)):      
-      doc_name = pages[i][0].metadata['source']
-      summary = st.session_state.book_summary[i].content
-      st.session_state.chat_history.append(AIMessage(content=doc_name[2:]+" "+summary))
 
     #Call functions for creating VectorDB
     vectordb = create_VectorStore()
     for page in pages:
       splits = get_splitsForVectorDB(page)
-      vectordb = add_toVectorStore(vectordb,splits)
+      vectordb = add_toVectorStore(vectordb,splits) 
     vectordb.persist()
+
+    for i in range(len(st.session_state.book_summary)):
+      doc_name = pages[i][0].metadata['source']
+      summary = doc_name[2:]+" "+st.session_state.book_summary[i].content
+      st.session_state.chat_history.append(AIMessage(content=summary))
+      summaryDoc = create_summaryDoc(summary)
+      vectordb = add_toVectorStore(vectordb,summaryDoc)
+
 
     # saving the vector store in the streamlit session state (to be persistent between reruns)
     st.session_state.vs = vectordb
@@ -225,11 +241,13 @@ def main():
             sectionSummaries, stringSectionSummaries = get_sectionSummaries(chunks)
             st.session_state.book_summary.append(get_bookSummaries(stringSectionSummaries))
             doc_name = pages[i][0].metadata['source']
-            summary = st.session_state.book_summary[i].content
-            st.session_state.chat_history.append(AIMessage(content=doc_name[2:]+" "+summary))
+            summary = doc_name[2:]+" "+st.session_state.book_summary[i].content
+            st.session_state.chat_history.append(AIMessage(content=summary))
         splits = get_splitsForVectorDB(pages[i])
         vectordb = st.session_state.vs
         vectordb = add_toVectorStore(vectordb,splits)
+        summaryDoc = create_summaryDoc(summary)
+        vectordb = add_toVectorStore(vectordb,summaryDoc)
         vectordb.persist()
         st.session_state.vs = vectordb
         st.sidebar.success('Uploaded, chunked and embedded successfully.')
