@@ -12,7 +12,6 @@ from langchain_openai import OpenAIEmbeddings
 from langsmith import Client
 
 client = Client()
-chromadb.reset()
 
 # Function to split PDF into chunks for summarisation
 def get_tokenSplit(pages):
@@ -193,6 +192,7 @@ def main():
   if not uploaded_file:
     if 'vs' in st.session_state:
       del st.session_state.vs
+      vectordb.reset()
       print("VectorDB deleted")
       st.session_state.doc_count = 0
       del st.session_state.book_summary
