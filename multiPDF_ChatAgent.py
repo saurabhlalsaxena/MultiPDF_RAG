@@ -165,11 +165,10 @@ def loadpdf(uploaded_file):
   return temp_file
 
 def main():
-  st.cache_resource.clear()
   st.set_page_config(page_title = "Chat with your documents")
   st.title('Chat with your documents!')
   text = st.chat_input("Type your message here...")
-
+  
   st.sidebar.header("Settings")
 
   uploaded_file = st.sidebar.file_uploader('Choose your PDF file', type = "pdf",accept_multiple_files=True)
@@ -179,8 +178,6 @@ def main():
       st.session_state.chat_history = [
           AIMessage(content="Welcome! 🌟 Feel free to upload a document, and I'll assist you with any questions or insights you need. Whether it's summarizing content, answering queries, or discussing key points, I'm here to help enhance your understanding. Simply upload your document, and let's get started on our insightful journey together!"),
       ]
-  if 'vs' not in st.session_state:
-    st.session_state.vs = create_VectorStore()
 
   if uploaded_file:
     pages = []
@@ -194,9 +191,7 @@ def main():
   #Managing new document uploads
   if not uploaded_file:
     if 'vs' in st.session_state:
-      st.session_state.vs.delete_collection
       del st.session_state.vs
-      print("VectorDB deleted")
       st.session_state.doc_count = 0
       del st.session_state.book_summary
 
@@ -213,6 +208,7 @@ def main():
           st.session_state.book_summary.append(get_bookSummaries(stringSectionSummaries))
 
     #Call functions for adding to VectorDB
+    st.session_state.vs = create_VectorStore()
     for page in pages:
       splits = get_splitsForVectorDB(page)
       st.session_state.vs = add_toVectorStore(st.session_state.vs,splits)
