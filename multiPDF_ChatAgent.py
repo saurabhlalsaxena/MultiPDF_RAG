@@ -216,18 +216,21 @@ def main():
     #Call functions for summarisation
     with st.sidebar:
       with st.spinner('Generating Summary...'):
+        #Call functions for adding to VectorDB
+        st.session_state.vs = create_VectorStore()
+        for page in pages:
+          splits = get_splitsForVectorDB(page)
+          st.session_state.vs = add_toVectorStore(st.session_state.vs,splits)
+        #vectordb.persist()
         st.session_state.book_summary = []
         for page in pages:
           chunks = get_tokenSplit(page)
           sectionSummaries, stringSectionSummaries = get_sectionSummaries(chunks)
+          for sectionSummary in sectionSummaries:
+            sectionSummaryDoc = create_summaryDoc(sectionSummary)
+            st.session_state.vs = add_toVectorStore(st.session_state.vs,sectionSummaryDoc)
           st.session_state.book_summary.append(get_bookSummaries(stringSectionSummaries))
 
-    #Call functions for adding to VectorDB
-    st.session_state.vs = create_VectorStore()
-    for page in pages:
-      splits = get_splitsForVectorDB(page)
-      st.session_state.vs = add_toVectorStore(st.session_state.vs,splits)
-    #vectordb.persist()
 
     for i in range(len(st.session_state.book_summary)):
       doc_name = pages[i][0].metadata['source']
@@ -245,7 +248,6 @@ def main():
     updated_doc_count = len(pages)
     if updated_doc_count > st.session_state.doc_count:
       for i in range(st.session_state.doc_count,updated_doc_count):
-        print("Uploaded new document")
         temp_file = loadpdf(uploaded_file[i])
         loader = PyPDFLoader(temp_file)
         pages.append(loader.load())
@@ -253,6 +255,9 @@ def main():
           with st.spinner('Generating Summary...'):
             chunks = get_tokenSplit(pages[i])
             sectionSummaries, stringSectionSummaries = get_sectionSummaries(chunks)
+            for sectionSummary in sectionSummaries:
+              sectionSummaryDoc = create_summaryDoc(sectionSummary)
+              st.session_state.vs = add_toVectorStore(st.session_state.vs,sectionSummaryDoc)
             st.session_state.book_summary.append(get_bookSummaries(stringSectionSummaries))
             doc_name = pages[i][0].metadata['source']
             summary = doc_name[2:]+" "+st.session_state.book_summary[i].content
