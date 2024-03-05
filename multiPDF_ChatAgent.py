@@ -73,7 +73,8 @@ def get_bookSummaries(stringSectionSummaries):
   template_string2 = """You are the editor of Harvard Business Review.\
   Read the below section summaries of a document and summarise the complete document based on the section summaries.
   The summary should contain only the topics discussed in the document and the main insights. The response should not refer to the section summaries
-  and only present a complete summary of the document. Mention the word summary.
+  and only present a complete summary of the document. Always mention the word summary at the beginning.
+  If there are any items that form a list then provide them in as bullet points in the summary.
   text: ```{text}```
   """
 
@@ -202,9 +203,12 @@ def main():
       st.session_state.vs = None
       del st.session_state.vs
       print("VectorDB deleted")
-      st.session_state.doc_count = 0
-      del st.session_state.book_summary
-      del st.session_state.qa_chain
+      if 'doc_count' in st.session_state:
+        st.session_state.doc_count = 0
+      if 'book_summary' in st.session_state:
+        del st.session_state.book_summary
+      if 'qa_chain' in st.session_state:
+        del st.session_state.qa_chain
 
 
   #Generate Summaries
