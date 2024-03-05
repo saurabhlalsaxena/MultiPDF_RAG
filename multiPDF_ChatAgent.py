@@ -175,7 +175,7 @@ def main():
   text = st.chat_input("Type your message here...")
 
   #st.session_state.clear()
-  st.write(st.session_state)
+  #st.write(st.session_state)
 
   st.sidebar.header("Settings")
 
