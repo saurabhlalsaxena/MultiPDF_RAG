@@ -112,7 +112,7 @@ def create_VectorStore():
 
   embeddings = OpenAIEmbeddings()
 
-  persist_directory = 'chroma/'
+  #persist_directory = 'chroma/'
   vectordb=Chroma(
       #persist_directory=persist_directory,
       embedding_function = embeddings
@@ -165,6 +165,7 @@ def loadpdf(uploaded_file):
   return temp_file
 
 def main():
+  st.cache_resource.clear()
   st.set_page_config(page_title = "Chat with your documents")
   st.title('Chat with your documents!')
   text = st.chat_input("Type your message here...")
@@ -191,8 +192,8 @@ def main():
   #Managing new document uploads
   if not uploaded_file:
     if 'vs' in st.session_state:
+      st.session_state.vs.delete_collection
       del st.session_state.vs
-      vectordb.reset()
       print("VectorDB deleted")
       st.session_state.doc_count = 0
       del st.session_state.book_summary
@@ -210,10 +211,10 @@ def main():
           st.session_state.book_summary.append(get_bookSummaries(stringSectionSummaries))
 
     #Call functions for creating VectorDB
-    vectordb = create_VectorStore()
+    st.session_state.vs = create_VectorStore()
     for page in pages:
       splits = get_splitsForVectorDB(page)
-      vectordb = add_toVectorStore(vectordb,splits) 
+      st.session_state.vs = add_toVectorStore(st.session_state.vs,splits)
     #vectordb.persist()
 
     for i in range(len(st.session_state.book_summary)):
@@ -221,11 +222,11 @@ def main():
       summary = doc_name[2:]+" "+st.session_state.book_summary[i].content
       st.session_state.chat_history.append(AIMessage(content=summary))
       summaryDoc = create_summaryDoc(summary)
-      vectordb = add_toVectorStore(vectordb,summaryDoc)
+      st.session_state.vs = add_toVectorStore(st.session_state.vs,summaryDoc)
 
 
     # saving the vector store in the streamlit session state (to be persistent between reruns)
-    st.session_state.vs = vectordb
+    #st.session_state.vs = vectordb
     st.sidebar.success('Uploaded, chunked and embedded successfully.')
 
   if uploaded_file and 'vs' in st.session_state:
@@ -245,12 +246,12 @@ def main():
             summary = doc_name[2:]+" "+st.session_state.book_summary[i].content
             st.session_state.chat_history.append(AIMessage(content=summary))
         splits = get_splitsForVectorDB(pages[i])
-        vectordb = st.session_state.vs
-        vectordb = add_toVectorStore(vectordb,splits)
+        #vectordb = st.session_state.vs
+        st.session_state.vs = add_toVectorStore(st.session_state.vs,splits)
         summaryDoc = create_summaryDoc(summary)
-        vectordb = add_toVectorStore(vectordb,summaryDoc)
+        st.session_state.vs = add_toVectorStore(st.session_state.vs,summaryDoc)
         #vectordb.persist()
-        st.session_state.vs = vectordb
+        #st.session_state.vs = vectordb
         st.sidebar.success('Uploaded, chunked and embedded successfully.')
     st.session_state.doc_count = updated_doc_count
 
@@ -258,9 +259,9 @@ def main():
   #if submitted and 'vs' in st.session_state:
   if text is not None and text !="" and 'vs' in st.session_state:
       question= text
-      vectordb = st.session_state.vs
+      #vectordb = st.session_state.vs
       if 'qa_chain' not in st.session_state:
-        st.session_state.qa_chain = question_answerWithMemory(vectordb)
+        st.session_state.qa_chain = question_answerWithMemory(st.session_state.vs)
       result = st.session_state.qa_chain.invoke({"question": question})
       st.session_state.chat_history.append(HumanMessage(content=question))
       st.session_state.chat_history.append(AIMessage(content=result['answer']))
