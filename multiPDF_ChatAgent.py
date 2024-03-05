@@ -2,6 +2,7 @@ __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import streamlit as st
+import uuid
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import Chroma
 from langchain_core.messages import AIMessage, HumanMessage
@@ -117,6 +118,10 @@ def create_VectorStore():
       #persist_directory=persist_directory,
       embedding_function = embeddings
   )
+  for collection in vectordb._client.list_collections():
+    ids = collection.get()['ids']
+    if len(ids): collection.delete(ids)
+
   return vectordb
 
 # Function to add documents to vector store
@@ -168,7 +173,10 @@ def main():
   st.set_page_config(page_title = "Chat with your documents")
   st.title('Chat with your documents!')
   text = st.chat_input("Type your message here...")
-  
+
+  #st.session_state.clear()
+  st.write(st.session_state)
+
   st.sidebar.header("Settings")
 
   uploaded_file = st.sidebar.file_uploader('Choose your PDF file', type = "pdf",accept_multiple_files=True)
@@ -191,9 +199,12 @@ def main():
   #Managing new document uploads
   if not uploaded_file:
     if 'vs' in st.session_state:
+      st.session_state.vs = None
       del st.session_state.vs
+      print("VectorDB deleted")
       st.session_state.doc_count = 0
       del st.session_state.book_summary
+      del st.session_state.qa_chain
 
 
   #Generate Summaries
