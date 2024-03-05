@@ -12,7 +12,7 @@ from langchain_openai import OpenAIEmbeddings
 from langsmith import Client
 
 client = Client()
-client.reset()
+chromadb.reset()
 
 # Function to split PDF into chunks for summarisation
 def get_tokenSplit(pages):
