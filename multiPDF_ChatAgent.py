@@ -213,7 +213,7 @@ def main():
     for page in pages:
       splits = get_splitsForVectorDB(page)
       vectordb = add_toVectorStore(vectordb,splits) 
-    vectordb.persist()
+    #vectordb.persist()
 
     for i in range(len(st.session_state.book_summary)):
       doc_name = pages[i][0].metadata['source']
@@ -248,7 +248,7 @@ def main():
         vectordb = add_toVectorStore(vectordb,splits)
         summaryDoc = create_summaryDoc(summary)
         vectordb = add_toVectorStore(vectordb,summaryDoc)
-        vectordb.persist()
+        #vectordb.persist()
         st.session_state.vs = vectordb
         st.sidebar.success('Uploaded, chunked and embedded successfully.')
     st.session_state.doc_count = updated_doc_count
