@@ -179,6 +179,8 @@ def main():
       st.session_state.chat_history = [
           AIMessage(content="Welcome! 🌟 Feel free to upload a document, and I'll assist you with any questions or insights you need. Whether it's summarizing content, answering queries, or discussing key points, I'm here to help enhance your understanding. Simply upload your document, and let's get started on our insightful journey together!"),
       ]
+  if 'vs' not in st.session_state:
+    st.session_state.vs = create_VectorStore()
 
   if uploaded_file:
     pages = []
@@ -210,8 +212,7 @@ def main():
           sectionSummaries, stringSectionSummaries = get_sectionSummaries(chunks)
           st.session_state.book_summary.append(get_bookSummaries(stringSectionSummaries))
 
-    #Call functions for creating VectorDB
-    st.session_state.vs = create_VectorStore()
+    #Call functions for adding to VectorDB
     for page in pages:
       splits = get_splitsForVectorDB(page)
       st.session_state.vs = add_toVectorStore(st.session_state.vs,splits)
