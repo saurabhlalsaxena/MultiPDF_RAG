@@ -294,4 +294,14 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+      main()
+    except Exception as e:
+      st.error("""
+      **Error Encountered: PDF Processing Issue**
+
+      We regret to inform you that the application has encountered an error while processing the 
+      PDF document. Please refresh the page and attempt the operation again with an alternate PDF file.
+
+      Thank you for your patience and understanding.
+      """, icon="🚨")
